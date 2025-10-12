@@ -22,8 +22,32 @@ void test_libraries() {
     printf("All ENSURES passed.\n");
 }
 
+void test_copy_and_percentyes() {
+    datachain_t dc = datachain_new();
+    dataunit_t du1 = dataunit_new();
+    du1->label = true;
+    dataunit_t du2 = dataunit_new();
+    du2->label = false;
+    dataunit_t du3 = dataunit_new();
+    du3->label = true;
+
+    datachain_add(dc, du1);
+    datachain_add(dc, du2);
+    datachain_add(dc, du3);
+
+    long double percent_yes = datachain_percentyes(dc);
+    printf("Percent yes: %.2Lf\n", percent_yes); // Expecting 0.666667
+    assert(percent_yes > 0.66 && percent_yes < 0.67);
+
+    datachain_t dc_copy = datachain_copy(dc);
+    assert(is_datachain(dc_copy));
+    assert(dc_copy->n_elements == dc->n_elements);
+    printf("Datachain copied successfully with %d elements.\n", dc_copy->n_elements);
+}
+
 int main() {
     test_libraries();
+    test_copy_and_percentyes();
     printf("All tests completed successfully.\n");
     return 0;
 }

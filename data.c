@@ -11,6 +11,8 @@ bool is_dataunit(dataunit_t x) {
 dataunit_t dataunit_new() {
     dataunit_t res = malloc(sizeof(dataunit));
     res->feature_vals = malloc((NFEATURES) * (sizeof(bool)));
+    for(int i=0;i<NFEATURES;i++)
+        res->feature_vals[i] = 0;
     ENSURES(is_dataunit(res));
     return res;
 }
