@@ -17,5 +17,6 @@ bool is_dataunit(dataunit_t x);
 dataunit_t dataunit_new();
 bool get_nth_feature_val(dataunit_t x, int n);
 bool get_label(dataunit_t x);
+void dataunit_free(dataunit_t x);
 
 #endif

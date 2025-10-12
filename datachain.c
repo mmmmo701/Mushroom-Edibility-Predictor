@@ -1,8 +1,25 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdio.h>
 #include "datachain.h"
 #include "c0-contracts.h"
+
+// ------------ datalist --------------
+
+void datalist_free(datalist_t x) {
+    #ifdef DEBUG
+    printf("Freeing datalist node.\n");
+    #endif
+    if(x == NULL)
+        return;
+    free(x->next);
+    if(x->data != NULL)
+        free(x->data);
+    free(x);
+}
+
+// ------------ datachain --------------
 
 bool is_seq(datalist_t a, datalist_t b) {
     if(a == b)
@@ -13,7 +30,7 @@ bool is_seq(datalist_t a, datalist_t b) {
 }
 
 bool is_datachain(datachain_t x) {
-    return x->start != NULL && x->end != NULL && is_seq(x->start, x->end);
+    return x!=NULL && x->start != NULL && x->end != NULL && is_seq(x->start, x->end);
 }
 
 datachain_t datachain_new() {
@@ -24,6 +41,11 @@ datachain_t datachain_new() {
     ENSURES(is_datachain(res));
     ENSURES(res->n_elements == 0);
     return res;
+}
+
+bool datachain_isempty(datachain_t x) {
+    REQUIRES(is_datachain(x));
+    return x->n_elements == 0;
 }
 
 void datachain_add(datachain_t x, dataunit_t d) {
@@ -61,4 +83,47 @@ datachain_t datachain_copy(datachain_t x) {
     ENSURES(is_datachain(res));
     ENSURES(res->n_elements == x->n_elements);
     return res;
+}
+
+void datachain_free(datachain_t x) {
+    #ifdef DEBUG
+    if(!is_datachain(x)) {
+        fprintf(stderr, "datachain_free: precondition failed: x is not a datachain\n");
+        abort();
+    }
+    printf("Freeing datachain with %d elements.\n", x->n_elements);
+    #endif  
+    REQUIRES(is_datachain(x));
+    free(x->start);
+    free(x);
+}
+
+void datachain_filter(datachain_t x, int feature, bool value) {
+    REQUIRES(is_datachain(x) && 0 <= feature && feature < NFEATURES);
+    datalist_t prev = NULL;
+    datalist_t it = x->start;
+    while(it != NULL) {
+        if(get_nth_feature_val(it->data, feature) != value) {
+            // remove this node
+            if(prev == NULL) {
+                // removing the start node
+                x->start = it->next;
+                free(it);
+                it = x->start;
+            } else {
+                prev->next = it->next;
+                free(it);
+                it = prev->next;
+            }
+            x->n_elements--;
+        } else {
+            prev = it;
+            it = it->next;
+        }
+    }
+    if(x->start == NULL) {
+        x->end = NULL;
+    }
+    ENSURES(is_datachain(x));
+    return;
 }

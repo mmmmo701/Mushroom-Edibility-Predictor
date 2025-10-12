@@ -1,11 +1,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdio.h>
 #include "data.h"
 #include "c0-contracts.h"
 
 bool is_dataunit(dataunit_t x) {
-    return x->feature_vals != NULL;
+    return x != NULL && x->feature_vals != NULL;
 }
 
 dataunit_t dataunit_new() {

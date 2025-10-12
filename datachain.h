@@ -13,6 +13,8 @@ struct datalist_header {
     datalist* next;
 };
 
+void datalist_free(datalist_t x);
+
 // ------------ data_chain --------------
 
 typedef struct datachain_header datachain;
@@ -25,10 +27,12 @@ struct datachain_header {
 
 bool is_datachain(datachain_t x);
 datachain_t datachain_new();
+bool datachain_isempty(datachain_t x);
 void datachain_add(datachain_t x, dataunit_t d);
 long double datachain_percentyes(datachain_t x);
 datachain_t datachain_copy(datachain_t x); 
 // note that the copy will share dataunits with the original and reverse the order of elements
-
+void datachain_filter(datachain_t x, int feature, bool value);
+void datachain_free(datachain_t x);
 
 #endif

@@ -1,42 +1,51 @@
-# Makefile - build modes: normal (default) or test; DEBUG adds -DDEBUG and -g
+# Compiler and defaults
 CC := gcc
 CFLAGS := -Wall -Wextra -std=c11
 LDFLAGS :=
 INCLUDES := -I.
 
-MODE ?= normal
+# Source discovery
 HEADERS := $(wildcard *.h)
 SRCS_ALL := $(wildcard *.c)
 
-ifeq ($(MODE),test)
-SRCS := $(filter-out main.c,$(SRCS_ALL))
-else
-SRCS := $(filter-out test.c,$(SRCS_ALL))
+# Modes can be space-separated (e.g., "test debug")
+MODES ?= normal
+
+# Base config
+SRCS := $(SRCS_ALL)
+TARGET := prog
+
+# Apply mode-specific rules
+ifneq (,$(filter test,$(MODES)))
+SRCS := $(filter-out main.c,$(SRCS))
+TARGET := testprog
 endif
 
-OBJS := $(SRCS:.c=.o)
-TARGET := $(if $(filter test,$(MODE)),testprog,prog)
-
-ifdef DEBUG
+ifneq (,$(filter debug,$(MODES)))
 CFLAGS += -DDEBUG -g
 endif
 
+OBJS := $(SRCS:.c=.o)
+
 .PHONY: all test debug clean
+
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-# every object depends on all headers so header changes trigger rebuilds
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
-# convenience targets
+# Convenience targets
 test:
-	$(MAKE) MODE=test
+	$(MAKE) MODES="test"
 
 debug:
-	$(MAKE) DEBUG=1
+	$(MAKE) MODES="debug"
+
+test-debug:
+	$(MAKE) MODES="test debug"
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) prog testprog

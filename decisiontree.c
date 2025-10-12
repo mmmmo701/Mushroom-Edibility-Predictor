@@ -1,0 +1,108 @@
+#include "decisiontree.h"
+#include "datachain.h"
+#include "c0-contracts.h"
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
+#include <stdio.h>
+#include <assert.h>
+
+bool is_decisiontree(decisiontree_t x) {
+    if(!x->is_leaf && !(0 <= (x->feature) && (x->feature) < NFEATURES))
+        return false;
+    if(!x->is_leaf && (x->left == NULL || x->right == NULL))
+        return false;
+    return true;
+}
+
+decisiontree_t decisiontree_new(bool label) {
+    decisiontree_t res = malloc(sizeof(decisiontree));
+    res->is_leaf = true;
+    res->feature = 0;
+    res->left = NULL;
+    res->right = NULL;
+    res->label = label;
+    ENSURES(is_decisiontree(res));
+    return res;
+}
+
+void decisiontree_init(decisiontree_t x, datachain_t data, int max_depth) {
+    #ifdef DEBUG
+    if(!is_decisiontree(x)) {
+        fprintf(stderr, "decisiontree_init: precondition failed: x is not a decisiontree\n");
+        abort();
+    }
+    if(!x->is_leaf) {
+        fprintf(stderr, "decisiontree_init: precondition failed: x is not a leaf\n");
+        abort();
+    }
+    if(!is_datachain(data)) {
+        fprintf(stderr, "decisiontree_init: precondition failed: data is not a datachain\n");
+        abort();
+    }
+    if(data->n_elements <= 0) {
+        fprintf(stderr, "decisiontree_init: precondition failed: data is empty\n");
+        abort();
+    }
+    if(max_depth < 0) {
+        fprintf(stderr, "decisiontree_init: precondition failed: max_depth is negative\n");
+        abort();
+    }
+    printf("decisiontree_init called with datachain of %d elements and max_depth %d\n", data->n_elements, max_depth);
+    #endif
+    REQUIRES(is_decisiontree(x));
+    REQUIRES(x->is_leaf);
+    REQUIRES(is_datachain(data));
+    REQUIRES(data->n_elements > 0);
+    REQUIRES(max_depth >= 0);
+
+    if(datachain_percentyes(data) == 0 || datachain_percentyes(data) == 1) {
+        x->label = (datachain_percentyes(data) == 1);
+        return;
+    }
+    if(max_depth == 0) {
+        x->label = (datachain_percentyes(data) >= 0.5);
+        return;
+    }
+
+    long double best_score = 0; // score = 2 * correct rate
+    int best_feature = 0;
+    for(int i=0;i<NFEATURES;i++) {
+        datachain_t f_data = datachain_copy(data);
+        datachain_filter(f_data, i, false);
+        datachain_t t_data = datachain_copy(data);
+        datachain_filter(t_data, i, true);
+        if(datachain_isempty(f_data) || datachain_isempty(t_data))
+            continue;
+        long double f_percent_yes = datachain_percentyes(f_data);
+        long double t_percent_yes = datachain_percentyes(t_data);
+        long double f_score = (f_percent_yes >= 0.5) ? f_percent_yes : (1 - f_percent_yes);
+        long double t_score = (t_percent_yes >= 0.5) ? t_percent_yes : (1 - t_percent_yes);
+        assert(f_score >= 0.5);
+        assert(t_score >= 0.5);
+        assert(f_score <= 1);
+        assert(t_score <= 1);
+        long double cur_score = 2 * (f_score * (f_data->n_elements) + t_score * (t_data->n_elements)) / (data->n_elements);
+        datachain_free(f_data);
+        datachain_free(t_data);
+        if(cur_score > best_score) {
+            best_score = cur_score;
+            best_feature = i;
+        }
+    }
+
+    datachain_t final_f_data = datachain_copy(data);
+    datachain_filter(final_f_data, best_feature, false);
+    datachain_t final_t_data = datachain_copy(data);
+    datachain_filter(final_t_data, best_feature, true);
+
+    x->is_leaf = false;
+    x->left = decisiontree_new(0);
+    x->right = decisiontree_new(0);
+    decisiontree_init(x->left, final_f_data, max_depth - 1);
+    decisiontree_init(x->right, final_t_data, max_depth - 1);
+
+    datachain_free(final_f_data);
+    datachain_free(final_t_data);
+    ENSURES(is_decisiontree(x));
+}
