@@ -19,6 +19,16 @@ dataunit_t dataunit_new() {
 }
 
 bool get_nth_feature_val(dataunit_t x, int n) {
+    #ifdef DEBUG
+    if(!is_dataunit(x)) {
+        fprintf(stderr, "get_nth_feature_val: precondition failed: x is not a dataunit\n");
+        abort();
+    }
+    if(!(0<=n && n<NFEATURES)) {
+        fprintf(stderr, "get_nth_feature_val: precondition failed: n is out of range\n");
+        abort();
+    }
+    #endif
     REQUIRES(is_dataunit(x) && 0<=n && n<NFEATURES);
     return x->feature_vals[n];
 }

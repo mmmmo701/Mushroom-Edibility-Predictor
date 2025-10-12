@@ -19,15 +19,16 @@ void datalist_free(datalist_t x) {
     free(x);
 }
 
-// ------------ datachain --------------
-
 bool is_seq(datalist_t a, datalist_t b) {
+    REQUIRES(a != NULL && b != NULL);
     if(a == b)
         return true;
     if(a->next == NULL)
         return false;
     return is_seq(a->next, b);
 }
+
+// ------------ datachain --------------
 
 bool is_datachain(datachain_t x) {
     return x!=NULL && x->start != NULL && x->end != NULL && is_seq(x->start, x->end);
@@ -86,13 +87,6 @@ datachain_t datachain_copy(datachain_t x) {
 }
 
 void datachain_free(datachain_t x) {
-    #ifdef DEBUG
-    if(!is_datachain(x)) {
-        fprintf(stderr, "datachain_free: precondition failed: x is not a datachain\n");
-        abort();
-    }
-    printf("Freeing datachain with %d elements.\n", x->n_elements);
-    #endif  
     REQUIRES(is_datachain(x));
     free(x->start);
     free(x);
@@ -102,7 +96,7 @@ void datachain_filter(datachain_t x, int feature, bool value) {
     REQUIRES(is_datachain(x) && 0 <= feature && feature < NFEATURES);
     datalist_t prev = NULL;
     datalist_t it = x->start;
-    while(it != NULL) {
+    while(it != x->end) {
         if(get_nth_feature_val(it->data, feature) != value) {
             // remove this node
             if(prev == NULL) {
@@ -120,9 +114,6 @@ void datachain_filter(datachain_t x, int feature, bool value) {
             prev = it;
             it = it->next;
         }
-    }
-    if(x->start == NULL) {
-        x->end = NULL;
     }
     ENSURES(is_datachain(x));
     return;

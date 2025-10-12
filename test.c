@@ -88,13 +88,33 @@ void test_decisiontree() {
 
     printf("Datachain with %d elements created for decision tree initialization.\n", dc->n_elements);
     decisiontree_init(dt, dc, 2);
+    printf("Decision tree initialized with max depth 2.\n");
     assert(is_decisiontree(dt));
     printf("Decision tree initialized successfully.\n");
+
+    // more tests
+    decisiontree_free(dt);
+    datachain_free(dc); // Note: dataunits are freed within datachain_free
+    printf("Decision tree and datachain freed successfully.\n");
+
+    // Test guessing
+    dt = decisiontree_new(false);
+    dc = datachain_new();
+    datachain_add(dc, du1);
+    datachain_add(dc, du2);
+    decisiontree_init(dt, dc, 1);
+    bool guess1 = guess_from_decisiontree(dt, du1);
+    bool guess2 = guess_from_decisiontree(dt, du2);
+    printf("Guess for du1: %d (expected: %d)\n", guess1, du1->label);
+    printf("Guess for du2: %d (expected: %d)\n", guess2, du2->label);
+    assert(guess1 == du1->label);
+    assert(guess2 == du2->label); // May not always be true depending on tree depth
 }
 
 int main() {
     test_libraries();
     test_copy_and_percentyes();
+    test_decisiontree();
     printf("All tests completed successfully.\n");
     return 0;
 }

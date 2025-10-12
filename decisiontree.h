@@ -17,5 +17,7 @@ struct decisiontree_header {
 bool is_decisiontree(decisiontree_t x);
 decisiontree_t decisiontree_new(bool label);
 void decisiontree_init(decisiontree_t x, datachain_t data, int max_depth);
+void decisiontree_free(decisiontree_t x);
+bool guess_from_decisiontree(decisiontree_t x, dataunit_t d);
 
 #endif

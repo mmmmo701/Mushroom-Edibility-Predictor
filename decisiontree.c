@@ -15,6 +15,16 @@ bool is_decisiontree(decisiontree_t x) {
     return true;
 }
 
+void decisiontree_free(decisiontree_t x) {
+    if(x == NULL)
+        return;
+    if(!x->is_leaf) {
+        decisiontree_free(x->left);
+        decisiontree_free(x->right);
+    }
+    free(x);
+}
+
 decisiontree_t decisiontree_new(bool label) {
     decisiontree_t res = malloc(sizeof(decisiontree));
     res->is_leaf = true;
@@ -27,29 +37,6 @@ decisiontree_t decisiontree_new(bool label) {
 }
 
 void decisiontree_init(decisiontree_t x, datachain_t data, int max_depth) {
-    #ifdef DEBUG
-    if(!is_decisiontree(x)) {
-        fprintf(stderr, "decisiontree_init: precondition failed: x is not a decisiontree\n");
-        abort();
-    }
-    if(!x->is_leaf) {
-        fprintf(stderr, "decisiontree_init: precondition failed: x is not a leaf\n");
-        abort();
-    }
-    if(!is_datachain(data)) {
-        fprintf(stderr, "decisiontree_init: precondition failed: data is not a datachain\n");
-        abort();
-    }
-    if(data->n_elements <= 0) {
-        fprintf(stderr, "decisiontree_init: precondition failed: data is empty\n");
-        abort();
-    }
-    if(max_depth < 0) {
-        fprintf(stderr, "decisiontree_init: precondition failed: max_depth is negative\n");
-        abort();
-    }
-    printf("decisiontree_init called with datachain of %d elements and max_depth %d\n", data->n_elements, max_depth);
-    #endif
     REQUIRES(is_decisiontree(x));
     REQUIRES(x->is_leaf);
     REQUIRES(is_datachain(data));
@@ -105,4 +92,18 @@ void decisiontree_init(decisiontree_t x, datachain_t data, int max_depth) {
     datachain_free(final_f_data);
     datachain_free(final_t_data);
     ENSURES(is_decisiontree(x));
+}
+
+bool guess_from_decisiontree(decisiontree_t x, dataunit_t d) {
+    REQUIRES(is_decisiontree(x));
+    REQUIRES(is_dataunit(d));
+    if(x->is_leaf) {
+        return x->label;
+    } else {
+        if(get_nth_feature_val(d, x->feature)) {
+            return guess_from_decisiontree(x->right, d);
+        } else {
+            return guess_from_decisiontree(x->left, d);
+        }
+    }
 }
