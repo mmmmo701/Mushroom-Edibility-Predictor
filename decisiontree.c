@@ -1,15 +1,6 @@
 #include "decisiontree.h"
-#include "datachain.h"
-#include "c0-contracts.h"
-#include <stdlib.h>
-#include <stdbool.h>
-#include <math.h>
-#include <stdio.h>
-#include <assert.h>
 
 bool is_decisiontree(decisiontree_t x) {
-    if(!x->is_leaf && !(0 <= (x->feature) && (x->feature) < NFEATURES))
-        return false;
     if(!x->is_leaf && (x->left == NULL || x->right == NULL))
         return false;
     return true;
@@ -36,12 +27,22 @@ decisiontree_t decisiontree_new(bool label) {
     return res;
 }
 
-void decisiontree_init(decisiontree_t x, datachain_t data, int max_depth) {
+void decisiontree_init(decisiontree_t x, datachain_t data, int max_depth, bool* used_features) {
+    /*
+    time complexity: O(N * D * log(N)) where N = number of dataunits, D = number of features
+    space complexity: O(D) for recursion stack
+    time complexity is too big for large N, but should be fine for small N
+    */
+    /*  
     REQUIRES(is_decisiontree(x));
-    REQUIRES(x->is_leaf);
     REQUIRES(is_datachain(data));
     REQUIRES(data->n_elements > 0);
     REQUIRES(max_depth >= 0);
+    */
+    #ifdef DEBUG_2
+    printf("Initializing decision tree node. is_leaf: %d, data size: %d, max_depth: %d\n", x->is_leaf, data->n_elements, max_depth);
+    #endif
+    REQUIRES(x->is_leaf);
 
     if(datachain_percentyes(data) == 0 || datachain_percentyes(data) == 1) {
         x->label = (datachain_percentyes(data) == 1);
@@ -54,10 +55,18 @@ void decisiontree_init(decisiontree_t x, datachain_t data, int max_depth) {
 
     long double best_score = 0; // score = 2 * correct rate
     int best_feature = 0;
-    for(int i=0;i<NFEATURES;i++) {
+    for(int i=0;i<(data->start->data->n_features);i++) {
+        if(used_features[i])
+            continue;
         datachain_t f_data = datachain_copy(data);
         datachain_filter(f_data, i, false);
+        #ifdef DEBUG
+        printf("  Evaluating feature %d: false branch size %d\n", i, f_data->n_elements);
+        #endif
         datachain_t t_data = datachain_copy(data);
+        #ifdef DEBUG
+        printf("  Evaluating feature %d: true branch size %d\n", i, t_data->n_elements);
+        #endif
         datachain_filter(t_data, i, true);
         if(datachain_isempty(f_data) || datachain_isempty(t_data))
             continue;
@@ -86,24 +95,38 @@ void decisiontree_init(decisiontree_t x, datachain_t data, int max_depth) {
     x->is_leaf = false;
     x->left = decisiontree_new(0);
     x->right = decisiontree_new(0);
-    decisiontree_init(x->left, final_f_data, max_depth - 1);
-    decisiontree_init(x->right, final_t_data, max_depth - 1);
+    x->feature = best_feature;
+    used_features[best_feature] = true;
+    decisiontree_init(x->left, final_f_data, max_depth - 1, used_features);
+    decisiontree_init(x->right, final_t_data, max_depth - 1, used_features);
 
     datachain_free(final_f_data);
     datachain_free(final_t_data);
     ENSURES(is_decisiontree(x));
 }
 
-bool guess_from_decisiontree(decisiontree_t x, dataunit_t d) {
-    REQUIRES(is_decisiontree(x));
-    REQUIRES(is_dataunit(d));
-    if(x->is_leaf) {
+extern bool ask_feature(int feature_index);
+
+bool guess_from_decisiontree(decisiontree_t x) {
+    if(x->is_leaf)
         return x->label;
+    bool feature_val = ask_feature(x->feature);
+    if(feature_val)
+        return guess_from_decisiontree(x->right);
+    else
+        return guess_from_decisiontree(x->left);
+}
+
+void decisiontree_print(decisiontree_t x, int depth) {
+    if(x == NULL)
+        return;
+    for(int i=0;i<depth;i++)
+        printf("  ");
+    if(x->is_leaf) {
+        printf("Leaf: label = %s\n", x->label ? "yes" : "no");
     } else {
-        if(get_nth_feature_val(d, x->feature)) {
-            return guess_from_decisiontree(x->right, d);
-        } else {
-            return guess_from_decisiontree(x->left, d);
-        }
+        printf("Node: feature %d\n", x->feature);
+        decisiontree_print(x->left, depth + 1);
+        decisiontree_print(x->right, depth + 1);
     }
 }

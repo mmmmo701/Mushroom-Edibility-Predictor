@@ -2,6 +2,11 @@
 #define DATACHAIN_H
 
 #include "data.h"
+#include <stddef.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <stdio.h>
+#include "c0-contracts.h"
 
 // ------------ data_list --------------
 
@@ -34,5 +39,6 @@ datachain_t datachain_copy(datachain_t x);
 // note that the copy will share dataunits with the original and reverse the order of elements
 void datachain_filter(datachain_t x, int feature, bool value);
 void datachain_free(datachain_t x);
+void datachain_print(datachain_t x, int max_elements);
 
 #endif

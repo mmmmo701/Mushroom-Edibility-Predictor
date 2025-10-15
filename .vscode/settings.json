@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "assert.h": "c"
+        "assert.h": "c",
+        "c0-contracts.h": "c",
+        "stddef.h": "c"
     }
 }

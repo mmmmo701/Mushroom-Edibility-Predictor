@@ -1,9 +1,4 @@
-#include <stddef.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
 #include "datachain.h"
-#include "c0-contracts.h"
 
 // ------------ datalist --------------
 
@@ -93,7 +88,7 @@ void datachain_free(datachain_t x) {
 }
 
 void datachain_filter(datachain_t x, int feature, bool value) {
-    REQUIRES(is_datachain(x) && 0 <= feature && feature < NFEATURES);
+    REQUIRES(is_datachain(x) && 0 <= feature && feature < (x->start->data->n_features));
     datalist_t prev = NULL;
     datalist_t it = x->start;
     while(it != x->end) {
@@ -117,4 +112,24 @@ void datachain_filter(datachain_t x, int feature, bool value) {
     }
     ENSURES(is_datachain(x));
     return;
+}
+
+void datachain_print(datachain_t x, int max_elements) {
+    REQUIRES(is_datachain(x));
+    printf("Datachain with %d elements:\n", x->n_elements);
+    int elements_printed = 0;
+    for(datalist_t it = x->start; it != x->end; it = it->next) {
+        if(elements_printed >= max_elements) {
+            printf("... (and %d more elements)\n", x->n_elements - elements_printed);
+            break;
+        }
+        elements_printed++;
+        printf("Dataunit: [");
+        for(int i = 0; i < it->data->n_features; i++) {
+            printf("%d", get_nth_feature_val(it->data, i));
+            if(i < it->data->n_features - 1)
+                printf(", ");
+        }
+        printf("], Label: %d\n", get_label(it->data));
+    }
 }

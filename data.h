@@ -1,12 +1,15 @@
 #ifndef DATA_H
 #define DATA_H
 
-#include "stdbool.h"
-
-#define NFEATURES 5
+#include <stdbool.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <stdio.h>
+#include "c0-contracts.h"
 
 struct dataunit_header {
     bool* feature_vals;
+    int n_features;
     bool label;
 };
 
